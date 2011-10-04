@@ -1,0 +1,309 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+	<TITLE>The Enbridge Inc. CUT C++ Unit Test Framework</TITLE>
+	<STYLE>
+	<!--
+		@page { size: 8.5in 11in }
+		P { font-family: "Arial", sans-serif }
+		A { font-family: "Arial", sans-serif }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-GB" BGCOLOR="#ffffff" DIR="LTR">
+<P><FONT SIZE=6>
+
+The Enbridge Inc. &quot;CUT&quot; C++ Unit Test Framework
+
+</FONT></P>
+
+<P> CUT is designed to make C++ unit testing as simple as possible,
+without sacrificing the ability to handle complex C++ constructs such
+as exceptions, templates and threads.</P>
+
+<P>In particular, it avoids most (if not all) of the painful reasons that
+people don't do unit testing in C++.</P>
+
+<P> Unlike other C++ unit testing frameworks, CUT: </P>
+
+<UL>
+
+<LI><P> Requires no compilation.  It is implemented in a single
+standard C++ header file.  No painful changes to makefiles required.
+Just add this to this to the <I>end</I> (so it doesn't clutter up your
+code or namespaces) of any C++ files you want to put some unit tests in:</P>
+
+<PRE>
+#if defined( TEST )
+#  include &lt;cut&gt;
+namespace cut {
+    // CUT Unit Tests go here...
+}
+#endif
+</PRE>
+
+<LI><P> Requires no explicit test linkage.  Unit tests for code are
+created right nearby the code they test, and are
+<I>automatically</I> linked into the executable if the code's object
+file is linked!</P>
+
+<P> OK, you missed that.  Read it again.  They are
+<I><B>auto</B>matically</I> included in your program, if your
+program happens to link in the related code!  They are
+<B>not</B> included, automatically, if your program doesn't use the
+code.  You never have to remember to "link in" the new test, or take
+it out.   You just get all the tests for all the code you use, and nothing else. </P>
+
+<P> Just add this to the top of the main C++ file: </P>
+
+<PRE>
+#if defined( TEST )
+#  include &lt;cut&gt;
+namespace cut {
+     test root( "My Program's Unit Tests" );
+}
+#endif
+</PRE>
+
+<P> There.  You've just created the cut::test object named 'root',
+which you will chain all your othere tests to.  Unless otherwise
+specified, you are going to run all the test suites chained to this
+'root' test suite. </P>
+
+<LI><P> Comes with predefined CUT test suite "runner" classes that
+emit regular HTML, CGI HTML or plain text.  It is quite straight
+forward to create new test suite &quot;cut::runner&quot; classes, to
+output test results in any format you desire.  Even to your new,
+custom super-dooper IGTP (Inter-Galactic Transfer Protocol) client.
+No changes to your test code required. </P>
+
+<P> So, set up your program to run your unit tests: </P>
+
+<PRE>
+main( int argc, char **argv ) {
+    bool run_unit_tests = false;
+    // Check argc/argv options here, and set run_unit_tests...
+#if defined( TEST )
+    if ( run_unit_tests ) {
+        cut::runner		textrunner( std::cout );
+        textrunner.run( cut::root );
+    }
+#endif
+    // Do your regular program stuff here...
+}
+</PRE>
+
+<P> However, you may find that your unit tests run so fast, that you
+just always want to run them (whenever you compile with "-DTEST"): </P>
+
+<PRE>
+main( int argc, char **argv )
+{
+#if defined( TEST )
+    // Run unit tests (cut::root, by default), complaining if any fail...
+    cut::runner( std::cout ).run();
+#endif
+    // Do your regular program stuff here...
+}
+</PRE>
+
+<LI><P> No "testing" classes to create.  Don't spend your time writing
+<A
+HREF="http://cppunit.sourceforge.net/doc/lastest/cppunit_cookbook.html">boiler-plate</A>
+derivations of test classes.  To add a new cut::test instance variable
+'my_test', under suite 'root', named "My Test", type: </P>
+
+<PRE>
+CUT( root, my_test, "My Test" ) {
+    // my test code...
+}
+</PRE>
+
+<P> No, you didn't miss something important.  That's <I>it</I>. </P>
+
+<LI><P> No complicated test suite "set-up" or "tear-down" mechanism is
+required.  Any test suite can (explicitly) run any other test suite
+(either by name: "My Test", or by instance: 'cut::my_test').  Just write a
+"generic" test suite, and then write some more test suite(s) that
+perform whatever "set-up" you want, run the "generic" suite, and then
+"tear-down" (see <A HREF="../cut-test.C">cut-test.C</A> for an example): </P>
+
+<PRE>
+namespace cut {
+    // First, create a root for a suite of "generic" tests,
+    // you want to run with many different "set-ups".
+    test generic( "Generic Tests" );
+
+    // You can chain suites under 'generic'...
+    CUT( generic, generic_suite_1, "Generic Suite 1" ) {
+    }
+    // ...as deep as you want!  Just like under 'cut::root'.
+    CUT( generic_suite_1, more_generic_tests, "Some More Tests" ) {
+    }
+
+    // Then, chain some test suites under 'cut::root', and call 'generic'
+    // with as many different test "set-ups" as you want!
+    CUT( root, setup_1, "Setup 1" ) {
+        // test 1 "set-up"
+	assert.run( generic );
+        // test 1 "tear-down"
+    }
+    CUT( root, setup_2, "Setup 2" ) {
+        // test 2 "set-up"
+	assert.run( generic );
+        // test 2 "tear-down"
+    }
+
+    // Better yet, loop and synthesize random test "set-ups" for each 'generic' run.
+    CUT( root, setup_random, "Setup Random" ) {
+        for ( int i = 0; i < 1000; ++i ) {
+	    // Some random setup
+	    assert.run( generic )
+	    // "tear-down" what we just set-up!
+	}
+    }
+} // namespace cut
+</PRE>
+
+<LI><P> Test cases are simple to specify; even if you don't yet know
+the expected result yet!  Only the most trivial programs have output
+that you can calculate a-priori (otherwise, why would you be writing
+the program?)  Write test suite output to std::cout (it is redirected
+to wherever the current "cut::runner" wants it to go).  Just write the
+tests cases, check the results later, and put in the expected values
+later (see <A HREF="../test-twofiles-2.C">test-twofiles-2.C</A> for an
+example): </P>
+</P>
+
+<PRE>
+namespace cut {
+    CUT( root, calculation_test "Calculation" ) {
+        std::cout << "Fill this in later!" << std::endl;
+        assert.ISUNKNOWN( sqrt( 2 ) );
+    }
+}
+</PRE>
+
+<P> Testing of any type that has -, *, /, -'ve, < and <= implemented,
+and is convertible to double or std::string is supported: </P>
+
+
+</UL>
+
+<P><FONT SIZE=5>
+<B>How-to</B>
+</FONT></P>
+
+<P> Here is a complete standalone CUT unit test, which actually runs
+its unit tests as CGI HTML, or as plain text.  See cut.H for more
+detailed instructions.</P>
+
+<PRE>
+#include &lt;cut&gt;
+#include &lt;iostream&gt;
+
+namespace cut {
+    test                        root( &quot;How-To Tests&quot; );
+
+    CUT( root, FirstSuite, &quot;The First Suite&quot; ) {
+        assert.out() &lt;&lt; &quot;Success: &quot; &lt;&lt; name() &lt;&lt; std::endl;
+        assert.ISTRUE( true );
+    }
+}
+
+int
+main( int, char ** ) {
+    bool success;
+    if ( getenv( "REQUEST_METHOD" )) {
+        // 
+        // Lets run our tests with CGI HTML output:
+        // 
+        //                            target  sparse  flat   cgi
+        //                            ------  ------  ----   ---
+        success = cut::htmlrunner( std::cout, false,  true,  true ).run();
+    } else {
+        // 
+        // But, here's the (simpler) textual output:
+        // 
+        success = cut::runner( std::cout ).run();
+    }
+    return ! success;
+}
+</PRE>
+
+<P> Now, lets imagine that you wanted to add a couple more unit tests,
+in some other compilation unit.  All you would do is add the following
+code to that file (note that you can use either assert.out() or
+std::cout to log test suite output, but you should probably be
+consistent; assert.out() goes to whatever std::ostream was passed to
+the cut::runner): </P>
+
+<PRE>
+#include &lt;cut&gt;
+
+namespace cut {
+    CUT( cut::root, SecondSuite, &quot;The Second Suite&quot; ) {
+	assert.out() &lt;&lt; &quot;Failure: &quot; &lt;&lt; name() &lt;&lt; std::endl;
+	assert.ISTRUE( false );
+    }
+
+    CUT( cut::root, ThirdSuite, &quot;The Third Suite&quot; ) {
+	std::cout &lt;&lt; &quot;Unknown: &quot; &lt;&lt; name() &lt;&lt; std::endl;
+	assert.ISUNKNOWN( true );
+    }
+}</PRE>
+
+<P> That's it!  No other house-keeping is required.  If the second
+compilation unit is linked, its tests will also be linked, and they
+will all be run. </P>
+
+<P><FONT SIZE=5>
+<B>Examples</B>
+</P></FONT>
+
+<P> Click the following link to generate the output of the above unit
+tests (remember, all tests are run 3 times, here, and all tests are
+output.  Normally, only non-successful tests would be output): </P>
+
+<A HREF="http://enbridge.kundert.2y.net/cgi-bin/cut/test-twofiles">http://enbridge.kundert.2y.net/cgi-bin/cut/test-twofiles</A>
+
+<P> Here is the output from another CUT unit test.  Once again, all of the
+unit tests are run multiple times, and output in several different
+forms: </P>
+
+<A HREF="http://enbridge.kundert.2y.net/cgi-bin/cut/cut-test">http://enbridge.kundert.2y.net/cgi-bin/cut/cut-test</A>
+
+<P> Finally, here is the unit test suite for the enbridge REF
+Reference Counting Pointer Framework, which runs about 2.2 million
+individual test cases.  Remember, all of these tests are actually
+being run when you click these links, and are generating the HTML
+output you see! </P>
+
+<A HREF="http://enbridge.kundert.2y.net/cgi-bin/ref/ref-test">http://enbridge.kundert.2y.net/cgi-bin/ref/ref-test</A>
+
+<P><FONT SIZE=5>
+<B>Download</B>
+</P></FONT>
+
+<P> The latest version is always available in the cut-#.#.#.tgz file,
+<A HREF="http://enbridge.kundert.2y.net/cut/">here</A></P>
+
+<P> Copyright (C) 2004,2005 Enbridge Inc. </P>
+
+<P> This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version. </P>
+
+<P> This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details. </P>
+
+<P> You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. </P> 
+
+</BODY>
+</HTML>

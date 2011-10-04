@@ -1,0 +1,11 @@
+*.o
+*.a
+*~
+.svn
+cut-test
+cut-test.html
+cutone
+cutone.html
+test-twofiles
+test-twofiles.html
+test-twofiles.text
