@@ -137,9 +137,8 @@ distclean:		clean
 clean:			
 	-rm -f	*.tgz					\
 		*.html					 \
-		*.text					 \
-		*~ 					  \
-		*.o 					   \
+		*.text					  \
+		*~ *.o *.a				   \
 		core*					    \
 		cut-test cutone test-twofiles
 
