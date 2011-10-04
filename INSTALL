@@ -1,0 +1,19 @@
+Installation
+
+    The CUT Framework is completely implemented in the <cut> and
+<cut.H> header files; only access to those files is necessary to use
+CUT.  Therefore, building and installing is very simple; to install,
+run:
+
+	./configure		# does nothing.
+	make			# builds optional unit test object, and distribution package
+	make install		# copies header files to /usr/local/include
+
+    The default installation target is /usr/local/include/; you will
+likely require root priviledges to install there.
+
+    To build and execute the (optional) CUT unit tests, run:
+
+	make test
+
+
