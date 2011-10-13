@@ -348,6 +348,36 @@ namespace cut {
     }
 
     // 
+    // force
+    // 
+    ///     A class useful for forcing inclusion of a test module that otherwise does not include
+    /// any symbols used by the target program.  Simply put:
+    /// 
+    ///    namespace cut {
+    ///        static force whatever;
+    ///    }
+    /// 
+    /// somewhere in the unit test file.
+    /// 
+    ///     Normally, the unit tests related to some functionality will be included in the same
+    /// compilation unit as the functionality itself, and so will automatically be included
+    /// whenever the linker resolves that the compilation unit must be included in the output
+    /// executable.
+    /// 
+    ///     If you wish to use separate compilation units to contain unit tests, then you must
+    /// arrange to "force" them to be linked whenever you link the library containing them.  The
+    /// only way to do this, is to put something requiring static initialization into the
+    /// compilation unit, such as a static instance of this cut::test class...
+    /// 
+    class force {
+    public:
+        force()
+        {
+            ;
+        }
+    };
+
+    // 
     // testhook
     // 
     ///     A hook upon which to hang a vector of tests.  Requires NO initialization before use!
@@ -1199,7 +1229,7 @@ namespace cut {
 	    std::ostream       &stream	= out();
 	    std::ios_base::fmtflags	
 				flg	= stream.flags();
-	    stream << '(' << file << ( s == success ? ';' : ':' ) << std::setw(4) << std::right << line << "): " 
+	    stream << file << ( s == success ? ';' : ':' ) << line << ": " 
 		   << std::setw(7) << statusname(s) << ": "
 		   << t.name() << ": \""
 		   << description << "\" "
@@ -1248,7 +1278,7 @@ namespace cut {
 	    std::ostream       &stream	= out();
 	    std::ios_base::fmtflags	
 				flg	= stream.flags();
-	    stream << '(' << file << ( s == success ? ';' : ':' ) << std::setw(4) << std::right << line << "): " 
+	    stream << file << ( s == success ? ';' : ':' ) << line << ": " 
 		   << std::setw(7) << statusname(s) << ": "
 		   << t.name() << ": \""
 		   << description << "\" "
@@ -1307,7 +1337,7 @@ namespace cut {
 	    std::ostream       &stream	= out();
 	    std::ios_base::fmtflags	
 				flg	= stream.flags();
-	    stream << '(' << t.file() << ( s == success ? ';' : ':' ) << std::setw(4) << std::right << t.line() << "): " 
+	    stream << t.file() << ( s == success ? ';' : ':' ) << t.line() << ": "
 		   << std::setw(7) << statusname(s) << ": "
 		   << t.name() << ": "
 		   << expected
